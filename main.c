@@ -19,10 +19,10 @@ FILE* csv_seek(FILE *csv, cell_position target)
 
     while (feof(csv) == 0)
     {
-        current_char = (char)fgetc(csv);
-        
         if (current_position.column == target.column && target.row == current_position.row)
             return csv;
+        
+        current_char = (char)fgetc(csv);
 
         if (current_char == ',')
             current_position.column++;
@@ -79,6 +79,21 @@ char* read_element(FILE *csv)
 
     return element;
 }
+void display_csv(FILE *csv)
+{
+    fseek(csv, 0, SEEK_SET);
+
+    char current_char;
+
+    while (feof(csv) == 0)
+    {
+        current_char = (char)fgetc(csv);
+        if (current_char == '\0')
+            printf("null");
+        else
+        printf("%c", current_char);
+    }
+}
 
 /*
     evaluates expression at position
@@ -90,14 +105,14 @@ char* read_element(FILE *csv)
 float evaluate_expression(FILE *csv, cell_position position, FILE *result)
 {
     csv = csv_seek(csv, position);
-    fseek(csv, -1, SEEK_CUR);
     int file_pointer = ftell(csv);
     /*
         expression was already evaluated and 
         stored in result FILE
     */
-    if ((char)fgetc(csv) == '\0')
+    if ((char)fgetc(csv) == '!')
     {
+        printf("Already there\n");
         return get_cell_value_from_file(position, result);
     }
     else
@@ -230,8 +245,7 @@ float evaluate_expression(FILE *csv, cell_position position, FILE *result)
         if (flag)
         {
             fseek(csv, file_pointer, SEEK_SET);
-            char write_null_char = '\0';
-            fwrite(&write_null_char, sizeof(char), 1, csv);
+            fprintf(csv, "!");
 
             int no_of_results;
             fseek(result, 0, SEEK_SET);
@@ -306,10 +320,11 @@ FILE* parse_csv(FILE *csv)
         {
             evaluate_expression(csv, current_position, result);
 
-            while (current_char != '\n' && current_char != ',')
+            while (feof(csv) == 0 && current_char != '\n' && current_char != ',')
                 current_char = (char)fgetc(csv);
+            
+            fseek(csv, -1, SEEK_CUR);
         }
-        
     }
 
     return result;
@@ -329,10 +344,9 @@ void display_results(FILE *result)
     }
 }
 
-
-
 int main()
 {
-    display_results(parse_csv(fopen("/Users/hrushi/Desktop/Programs/excellator/data/numbers.csv", "r")));
+    FILE *csv = fopen("/Users/hrushi/Desktop/Programs/excellator/data/numbers.csv", "r+");
+    display_results(parse_csv(csv));
     return 0;
 }
