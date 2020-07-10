@@ -308,7 +308,6 @@ FILE* parse_csv(FILE *csv)
         {
             current_position.column = 'A';
             current_position.row++;
-            printf("%lu\n", ftell(csv));
         }
         else if (current_char == ':')
         {
@@ -339,6 +338,46 @@ FILE* parse_csv(FILE *csv)
     return result;
 }
 
+FILE *export_to_html(FILE *csv, FILE *result) {
+
+    FILE *csv_html = fopen("/Users/hrushi/Desktop/Programs/excellator/csv_html.html", "w");
+    fprintf(csv_html, "<html>\n<style>\ntable, th, td {border: 1px solid black;}</style>");
+    fprintf(csv_html, "<body>\n\t<table>\n\t  <tr>\n\t\t<td>");
+
+    char current_char;
+    fseek(csv, 0, SEEK_SET);
+    cell_position current_position = {1, 'A'};
+
+    while (feof(csv) == 0)
+    {
+        current_char = (char)fgetc(csv);
+
+        if (current_char == '!')
+        {
+            fprintf(csv_html, "%f", get_cell_value_from_file(current_position, result));
+            while (feof(csv) == 0 && current_char != '\n' && current_char != ',')
+                current_char = (char)fgetc(csv);
+        }
+        else if (is_num(current_char) || current_char == '.')
+            fprintf(csv_html, "%c", current_char);
+        if (current_char == ',')
+        {
+            fprintf(csv_html, "</td>\n\t\t<td>");
+            current_position.column++;
+        }
+        else if (current_char == '\n')
+        {
+            fprintf(csv_html, "</td>\n\t  <tr>\n\t\t<td>");
+            current_position.row++;
+            current_position.column = 'A';
+        }
+
+    }
+    fprintf(csv_html, "</td>\n\t  </tr>\n\t</table>\n  </body>\n</html>");
+
+    return csv_html;
+}
+
 void display_results(FILE *result)
 {
     int no_of_result;
@@ -356,8 +395,8 @@ void display_results(FILE *result)
 int main()
 {
     FILE *csv = fopen("/Users/hrushi/Desktop/Programs/excellator/data/numbers.csv", "r+");
-    //while (feof(csv) == 0)
-      //  fgetc(csv);
-    display_results(parse_csv(csv));
+    FILE *result = parse_csv(csv);
+
+    export_to_html(csv, result);
     return 0;
 }
