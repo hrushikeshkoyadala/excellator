@@ -138,6 +138,7 @@ float evaluate_expression(FILE *csv, cell_position position, FILE *result)
 
             if (is_alpha(*expression))
             {
+                flag = 1;
                 cell_position req_cell;
                 req_cell.column = *expression;
                 req_cell.row = 0;
@@ -255,6 +256,9 @@ float evaluate_expression(FILE *csv, cell_position position, FILE *result)
             fseek(result, sizeof(int) + no_of_results*sizeof(cell_result), SEEK_SET);
             fwrite(&to_write, sizeof(cell_result), 1, result);
 
+            fseek(result, sizeof(int) + no_of_results*sizeof(cell_result), SEEK_SET);
+            fread(&to_write, sizeof(cell_result), 1, result);
+
             //update number of results in file
             no_of_results++;
             fseek(result, 0, SEEK_SET);
@@ -304,6 +308,7 @@ FILE* parse_csv(FILE *csv)
         {
             current_position.column = 'A';
             current_position.row++;
+            printf("%lu\n", ftell(csv));
         }
         else if (current_char == ':')
         {
@@ -318,10 +323,14 @@ FILE* parse_csv(FILE *csv)
         //an expression
         else if (is_alpha(current_char))
         {
+            int fp = ftell(csv);
             evaluate_expression(csv, current_position, result);
-
-            while (feof(csv) == 0 && current_char != '\n' && current_char != ',')
-                current_char = (char)fgetc(csv);
+            fseek(csv, fp, SEEK_SET);
+            while (current_char != '\n' && current_char != ',')
+                if (feof(csv))
+                    break;
+                else
+                    current_char = (char)fgetc(csv);
             
             fseek(csv, -1, SEEK_CUR);
         }
@@ -347,6 +356,8 @@ void display_results(FILE *result)
 int main()
 {
     FILE *csv = fopen("/Users/hrushi/Desktop/Programs/excellator/data/numbers.csv", "r+");
+    //while (feof(csv) == 0)
+      //  fgetc(csv);
     display_results(parse_csv(csv));
     return 0;
 }
